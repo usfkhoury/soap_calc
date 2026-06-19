@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#f4eee3" />
+  <!-- Apply the saved theme (auto | light | dark) before first paint to avoid a flash. -->
+  <script>
+    (function () {
+      var m = 'auto';
+      try { m = localStorage.getItem('theme') || 'auto'; } catch (e) {}
+      document.documentElement.setAttribute('data-theme', m);
+    })();
+  </script>
+
+  <title>soap_calc — olive-oil soap calculator</title>
+  <meta name="description" content="A weight-based calculator and cure tracker for 100% olive oil (castile) soap. Enter oil weight, get exact lye and water. Works offline." />
+  <link rel="canonical" href="https://soap.usfkhoury.com/" />
+
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/icon.svg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..560&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* Vendored from usfkhoury.com (landing_page) — keep palettes in sync there. */
+    :root, :root[data-theme="light"] {
+      --bg:        #f4eee3;
+      --surface:   #fbf7ee;
+      --text:      #2f2a22;
+      --muted:     #7c7363;
+      --line:      #e4dac8;
+      --olive:     #6e7a44;
+      --olive-deep:#54603a;
+      --terracotta:#b25c3b;
+      --shadow:    20px 30px -24px rgba(58, 46, 30, 0.45);
+    }
+    :root[data-theme="dark"] {
+      --bg:        #1a1711;
+      --surface:   #241f17;
+      --text:      #ece4d5;
+      --muted:     #a89a83;
+      --line:      #332d22;
+      --olive:     #9aa765;
+      --olive-deep:#b3bd80;
+      --terracotta:#cf7a52;
+      --shadow:    20px 30px -24px rgba(0, 0, 0, 0.6);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root[data-theme="auto"], :root:not([data-theme]) {
+        --bg:        #1a1711;
+        --surface:   #241f17;
+        --text:      #ece4d5;
+        --muted:     #a89a83;
+        --line:      #332d22;
+        --olive:     #9aa765;
+        --olive-deep:#b3bd80;
+        --terracotta:#cf7a52;
+        --shadow:    20px 30px -24px rgba(0, 0, 0, 0.6);
+      }
+    }
+
+    body {
+      min-height: 100dvh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+    }
+    .wrap { max-width: 640px; margin: 0 auto; padding: 2.2rem 1.1rem 4rem; }
+
+    h1 {
+      font-family: "Fraunces", Georgia, serif;
+      font-weight: 500;
+      font-size: clamp(1.7rem, 5vw, 2.3rem);
+      letter-spacing: -0.01em;
+    }
+    h1 .soap { color: var(--olive); }
+    .lede { color: var(--muted); margin-top: 0.3rem; max-width: 48ch; }
+    h2 {
+      font-family: "Fraunces", Georgia, serif;
+      font-weight: 500;
+      font-size: 1.25rem;
+      margin-bottom: 0.2rem;
+    }
+    .section-note { color: var(--muted); font-size: 0.9rem; margin-bottom: 0.9rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 1.3rem 1.2rem;
+      margin-top: 1.5rem;
+    }
+
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.3rem; }
+    .field { margin-bottom: 0.9rem; }
+    .row { display: flex; gap: 0.8rem; flex-wrap: wrap; }
+    .row > .field { flex: 1 1 8rem; }
+
+    input[type="number"], input[type="date"], input[type="text"], input[type="password"] {
+      width: 100%;
+      font: inherit;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: 0.55rem 0.65rem;
+    }
+    input:focus-visible { outline: none; border-color: var(--terracotta); box-shadow: 0 0 0 3px color-mix(in srgb, var(--terracotta) 22%, transparent); }
+
+    .btn {
+      font: inherit;
+      cursor: pointer;
+      border-radius: 9px;
+      padding: 0.55rem 1rem;
+      border: 1px solid var(--terracotta);
+      background: var(--terracotta);
+      color: #fff;
+      transition: filter 0.15s ease;
+    }
+    .btn:hover { filter: brightness(1.06); }
+    .btn.ghost { background: transparent; color: var(--terracotta); }
+    .btn.small { padding: 0.35rem 0.7rem; font-size: 0.85rem; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+
+    /* Calculator outputs */
+    .outputs { display: flex; gap: 0.7rem; flex-wrap: wrap; margin-top: 0.4rem; }
+    .out {
+      flex: 1 1 7rem;
+      background: color-mix(in srgb, var(--olive) 12%, transparent);
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      padding: 0.8rem 0.9rem;
+    }
+    .out .k { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .out .v {
+      font-family: "Fraunces", Georgia, serif;
+      font-variant-numeric: tabular-nums;
+      font-size: 1.7rem;
+      line-height: 1.1;
+      margin-top: 0.15rem;
+    }
+    .out .u { font-size: 0.9rem; color: var(--muted); }
+
+    .hint { font-size: 0.82rem; color: var(--muted); margin-top: 0.5rem; }
+    .warn {
+      font-size: 0.85rem;
+      border-left: 3px solid var(--terracotta);
+      padding: 0.4rem 0 0.4rem 0.7rem;
+      margin-top: 0.8rem;
+      color: var(--text);
+    }
+
+    ol.steps { margin: 0.2rem 0 0 1.1rem; }
+    ol.steps li { margin-bottom: 0.45rem; }
+
+    details { border-top: 1px solid var(--line); padding-top: 0.7rem; margin-top: 0.7rem; }
+    details:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+    summary { cursor: pointer; font-weight: 500; color: var(--olive-deep); }
+    details > *:not(summary) { margin-top: 0.5rem; }
+    details p { margin-bottom: 0.5rem; }
+
+    .batch { border: 1px solid var(--line); border-radius: 11px; padding: 0.8rem 0.9rem; margin-top: 0.8rem; }
+    .batch .top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+    .batch h3 { font-family: "Fraunces", serif; font-weight: 500; font-size: 1.05rem; }
+    .pill { font-size: 0.72rem; padding: 0.12rem 0.55rem; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+    .pill.cured { color: var(--olive-deep); border-color: var(--olive); }
+    .meta { font-size: 0.82rem; color: var(--muted); margin-top: 0.25rem; }
+    .cure-row { display: flex; gap: 0.4rem; align-items: center; font-size: 0.85rem; margin-top: 0.3rem; font-variant-numeric: tabular-nums; }
+    .spark { display: flex; align-items: flex-end; gap: 2px; height: 34px; margin-top: 0.5rem; }
+    .spark span { flex: 1; background: var(--olive); border-radius: 2px 2px 0 0; min-height: 2px; opacity: 0.85; }
+
+    .status-line { font-size: 0.82rem; color: var(--muted); margin-top: 1.2rem; text-align: center; }
+    .net-off { color: var(--terracotta); }
+
+    .theme-toggle {
+      position: fixed; top: 1rem; right: 1rem; z-index: 10;
+      width: 38px; height: 38px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; line-height: 1;
+      color: var(--muted); background: var(--surface);
+      border: 1px solid var(--line); border-radius: 999px; cursor: pointer;
+      transition: color 0.18s ease, border-color 0.18s ease;
+    }
+    .theme-toggle:hover, .theme-toggle:focus-visible { color: var(--terracotta); border-color: var(--terracotta); outline: none; }
+
+    a { color: var(--terracotta); }
+    .foot { margin-top: 2rem; font-size: 0.8rem; color: var(--muted); text-align: center; }
+
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <button id="theme-toggle" class="theme-toggle" type="button"
+          aria-label="Theme: auto (system)" title="Theme: auto (system)">◐</button>
+
+  <div class="wrap">
+    <header>
+      <h1><span class="soap">🧼</span> soap_calc</h1>
+      <p class="lede">Weight-based calculator for 100% olive-oil (castile) soap. Weigh your oil, get exact lye &amp; water — no SoapCalc, works offline.</p>
+    </header>
+
+    <!-- ============ CALCULATOR ============ -->
+    <section class="card" aria-labelledby="calc-h">
+      <h2 id="calc-h">Calculator</h2>
+      <p class="section-note">Everything by weight, in grams. Defaults give a firm, mild castile bar.</p>
+
+      <div class="field">
+        <label for="oil">Olive oil (g)</label>
+        <input id="oil" type="number" inputmode="decimal" min="0" step="1" value="1000" />
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="superfat">Superfat (%)</label>
+          <input id="superfat" type="number" inputmode="decimal" min="0" max="15" step="0.5" value="5" />
+        </div>
+        <div class="field">
+          <label for="conc">Lye concentration (%)</label>
+          <input id="conc" type="number" inputmode="decimal" min="25" max="50" step="1" value="40" />
+        </div>
+      </div>
+
+      <div class="outputs">
+        <div class="out"><div class="k">Lye (NaOH)</div><div><span class="v" id="out-lye">128</span> <span class="u">g</span></div></div>
+        <div class="out"><div class="k">Water</div><div><span class="v" id="out-water">192</span> <span class="u">g</span></div></div>
+        <div class="out"><div class="k">Total batch</div><div><span class="v" id="out-total">1320</span> <span class="u">g</span></div></div>
+      </div>
+
+      <p class="hint" id="calc-explain"></p>
+
+      <details>
+        <summary>Advanced</summary>
+        <div class="field">
+          <label for="sap">Olive oil SAP value (g NaOH per g oil)</label>
+          <input id="sap" type="number" inputmode="decimal" min="0.12" max="0.15" step="0.001" value="0.135" />
+        </div>
+        <p class="hint">Assumes ~99% pure caustic soda. If your lye is less pure, increase it proportionally.</p>
+      </details>
+
+      <p class="warn">⚠️ Always weigh on a scale, wear gloves + eye protection, work in ventilation, and <strong>add lye to the water — never water to lye</strong>.</p>
+    </section>
+
+    <!-- ============ SCALE BY BARS ============ -->
+    <section class="card" aria-labelledby="bars-h">
+      <h2 id="bars-h">Scale by bars</h2>
+      <p class="section-note">Work backwards from how many bars you want.</p>
+      <div class="row">
+        <div class="field">
+          <label for="bars-want">Bars wanted</label>
+          <input id="bars-want" type="number" inputmode="numeric" min="1" step="1" value="10" />
+        </div>
+        <div class="field">
+          <label for="g-per-bar">Oil per bar (g)</label>
+          <input id="g-per-bar" type="number" inputmode="decimal" min="1" step="1" value="100" />
+        </div>
+      </div>
+      <button class="btn ghost small" id="apply-bars" type="button">Set oil to <span id="bars-oil">1000</span> g →</button>
+      <p class="hint">"Oil per bar" is remembered. Tune it once you know your molds.</p>
+    </section>
+
+    <!-- ============ BATCH LOG + CURE TRACKER ============ -->
+    <section class="card" aria-labelledby="log-h">
+      <h2 id="log-h">Batch log &amp; cure tracker</h2>
+      <p class="section-note">Save a batch, then weigh it weekly. When the weight stops dropping, it's cured.</p>
+
+      <div class="row">
+        <div class="field">
+          <label for="batch-bars">Bars produced (optional)</label>
+          <input id="batch-bars" type="number" inputmode="numeric" min="0" step="1" placeholder="e.g. 10" />
+        </div>
+        <div class="field">
+          <label for="batch-notes">Notes (optional)</label>
+          <input id="batch-notes" type="text" placeholder="scent, mold, tweaks…" />
+        </div>
+      </div>
+      <button class="btn" id="save-batch" type="button">Save current batch</button>
+
+      <div id="batches" aria-live="polite"></div>
+
+      <details>
+        <summary>Sync settings</summary>
+        <p class="hint">Batches sync to your Notion database when online. Writes need the shared passphrase (kept only on this device).</p>
+        <div class="field">
+          <label for="secret">Write passphrase</label>
+          <input id="secret" type="password" autocomplete="off" placeholder="SOAP_WRITE_SECRET" />
+        </div>
+        <button class="btn ghost small" id="save-secret" type="button">Save passphrase</button>
+        <button class="btn ghost small" id="refresh" type="button">Refresh from Notion</button>
+      </details>
+    </section>
+
+    <!-- ============ PROCESS & SAFETY ============ -->
+    <section class="card" aria-labelledby="proc-h">
+      <h2 id="proc-h">Process &amp; safety</h2>
+      <p class="warn">Lye is caustic. Gloves + eye protection on. Kids and pets away. <strong>Lye into water, never the reverse</strong> — the reverse can erupt.</p>
+      <ol class="steps">
+        <li>Weigh your olive oil into a plastic bucket so you know the exact amount.</li>
+        <li>In a <em>separate</em> plastic bucket, weigh the water, then slowly stir the weighed lye <em>into</em> the water with a wooden/silicone stick. It heats up and gives off fumes — do it in ventilation and keep your face back.</li>
+        <li>Let the lye-water cool a little, then pour it into the oil and stir/blend until it thickens to "trace" (leaves a faint trail on the surface).</li>
+        <li>Pour into your molds.</li>
+        <li>After 1–2 days in a ventilated, shaded, low-humidity spot, unmold once firm enough.</li>
+        <li>Weigh each bar weekly. When the weight stops dropping, the water has cured out — log it here and the tracker marks it cured.</li>
+      </ol>
+    </section>
+
+    <!-- ============ LEARN / THE SCIENCE ============ -->
+    <section class="card" aria-labelledby="learn-h">
+      <h2 id="learn-h">Learn — the science</h2>
+      <p class="section-note">Why the numbers are what they are. The reasoning behind this whole tool.</p>
+
+      <details>
+        <summary>Volume vs. weight (and why we weigh)</summary>
+        <p>Volume measures the space something takes up (cups, mL); weight measures how heavy it is (grams). The same <em>volume</em> of two things weighs different amounts — a cup of water ≈ 240 g, a cup of olive oil ≈ 220 g, a cup of lye anywhere from ~200–320 g depending on its form.</p>
+        <p>The old family recipe was a <strong>1 : 2 : 8</strong> (lye : water : oil) ratio by volume. It works by habit, but it isn't repeatable or safe to scale. This tool is <strong>weight-only</strong>: every number is grams on a scale.</p>
+      </details>
+
+      <details>
+        <summary>Why lye by volume is unsafe</summary>
+        <p>Water and oil convert from volume to weight predictably. Solid caustic soda (lye) does <em>not</em> — its bulk density swings with its form: light flakes pour at ~0.85–1.0 g/mL, heavy beads/pearls at ~1.1–1.4. So "one scoop of lye" can be anywhere from a mild bar to a <strong>lye-heavy, skin-burning</strong> one, and you can't tell by looking. Lye is the one ingredient that can hurt you, so it's the one you must weigh.</p>
+      </details>
+
+      <details>
+        <summary>Saponification — how soap happens</summary>
+        <p>Soap is a reaction: <strong>oil + lye → soap + glycerin</strong>. Every gram of oil needs a precise amount of lye to turn into soap. Too <em>much</em> lye leaves caustic lye in the bar (harsh, can burn). Too <em>little</em> leaves unreacted oil in the bar (soft, extra-moisturizing, and safe).</p>
+      </details>
+
+      <details>
+        <summary>SAP value — each oil's "lye appetite"</summary>
+        <p>Every fat has a known number — its <strong>saponification (SAP) value</strong> — for how much lye fully reacts with 1 g of it. Olive oil's is about <strong>0.135 g lye per g oil</strong>. Because we only ever use one oil, the whole calculation collapses to a single multiplier; that's why SoapCalc's big oil database is overkill here.</p>
+      </details>
+
+      <details>
+        <summary>Superfat — the mildness/safety cushion</summary>
+        <p><strong>Superfat</strong> is deliberately using slightly <em>less</em> lye than the full amount, so a little oil stays un-saponified. It makes the bar milder and guarantees no leftover lye. Higher superfat = milder but softer and more prone to going rancid; lower = firmer and longer-lasting. Olive oil is already the gentlest oil, so castile can sit at a low <strong>5%</strong> and still be mild.</p>
+      </details>
+
+      <details>
+        <summary>Lye concentration / water discount</summary>
+        <p>How much water you use is the same idea told two ways: "2 : 1 water-to-lye" = "33% lye concentration." More water → slower trace, softer bar, longer cure, more shrinkage. Less water (a "water discount") → firmer sooner, shorter cure. Castile is notoriously soft and slow, so a discount is the <strong>biggest lever</strong> for a harder bar. The default <strong>40%</strong> concentration (water = lye × 1.5) is a deliberate discount.</p>
+      </details>
+
+      <details>
+        <summary>How this recipe's defaults are derived</summary>
+        <p><code>lye = oil × SAP × (1 − superfat)</code> = <code>oil × 0.135 × 0.95</code> = <strong>oil × 0.128</strong>.</p>
+        <p><code>water = lye × (100 − conc)/conc</code> = <code>lye × 1.5</code> = <strong>oil × 0.192</strong>.</p>
+        <p>So 1000 g oil → 128 g lye, 192 g water. We derived these fresh from saponification — we did <em>not</em> convert the old volume ratio, because its lye amount was the unreliable part.</p>
+      </details>
+
+      <details>
+        <summary>Curing — and what the tracker does</summary>
+        <p>After saponification the bar still holds water, which evaporates over weeks to months. As it leaves, the bar gets harder, milder, and longer-lasting. The way to know it's done: weigh a bar weekly — when the weight stops dropping, the water is gone. The cure tracker above just automates that: log the weekly weight and it flags the batch "cured" once the weekly change flattens out.</p>
+      </details>
+
+      <details>
+        <summary>Why SoapCalc was overkill</summary>
+        <p>SoapCalc exists to compute lye for recipes that <em>blend many oils</em>, each with its own SAP value, plus sliders for superfat and water. With a single oil and fixed preferences, all of that reduces to two multiplications — which is exactly what this page does.</p>
+      </details>
+    </section>
+
+    <p class="status-line" id="status">Loading…</p>
+    <p class="foot">soap_calc · <a href="https://usfkhoury.com">usfkhoury.com</a></p>
+  </div>
+
+  <!-- Theme toggle: cycles auto → light → dark, persisted in localStorage. Vendored from landing_page. -->
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var btn = document.getElementById('theme-toggle');
+      var order = ['auto', 'light', 'dark'];
+      var icon = { auto: '◐', light: '☀︎', dark: '☾' };
+      var label = { auto: 'Theme: auto (system)', light: 'Theme: light', dark: 'Theme: dark' };
+      var darkMq = window.matchMedia('(prefers-color-scheme: dark)');
+      function resolved(mode) { return mode === 'auto' ? (darkMq.matches ? 'dark' : 'light') : mode; }
+      function apply(mode) {
+        root.setAttribute('data-theme', mode);
+        try { localStorage.setItem('theme', mode); } catch (e) {}
+        var r = resolved(mode);
+        root.style.colorScheme = r;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', r === 'dark' ? '#1a1711' : '#f4eee3');
+        btn.textContent = icon[mode]; btn.setAttribute('aria-label', label[mode]); btn.title = label[mode];
+      }
+      apply(root.getAttribute('data-theme') || 'auto');
+      btn.addEventListener('click', function () {
+        var cur = root.getAttribute('data-theme') || 'auto';
+        apply(order[(order.indexOf(cur) + 1) % order.length]);
+      });
+      darkMq.addEventListener('change', function () {
+        if ((root.getAttribute('data-theme') || 'auto') === 'auto') apply('auto');
+      });
+    })();
+  </script>
+
+  <script src="/calc.js"></script>
+  <script src="/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').catch(function () {});
+      });
+    }
+  </script>
+</body>
+</html>

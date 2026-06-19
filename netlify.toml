@@ -1,0 +1,14 @@
+# Static publish (no build step) + the one serverless function.
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[functions]
+  # @notionhq/client is bundled for the function at deploy time.
+  node_bundler = "esbuild"
+
+# Friendly path → function.
+[[redirects]]
+  from = "/api/soap"
+  to = "/.netlify/functions/soap"
+  status = 200

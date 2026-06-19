@@ -1,0 +1,13 @@
+{
+  "name": "soap_calc — olive-oil soap calculator",
+  "short_name": "soap_calc",
+  "description": "Weight-based calculator and cure tracker for 100% olive oil (castile) soap. Works offline.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4eee3",
+  "theme_color": "#f4eee3",
+  "icons": [
+    { "src": "/icon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any maskable" }
+  ]
+}
