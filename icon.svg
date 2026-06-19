@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="soap_calc">
-  <rect width="512" height="512" rx="96" fill="#f4eee3"/>
+  <rect width="512" height="512" rx="96" fill="#f5f2e9"/>
   <!-- soap bar -->
-  <rect x="116" y="196" width="280" height="170" rx="34" fill="#6e7a44"/>
-  <rect x="116" y="196" width="280" height="60" rx="34" fill="#54603a"/>
+  <rect x="116" y="196" width="280" height="170" rx="34" fill="#4a5d23"/>
+  <rect x="116" y="196" width="280" height="60" rx="34" fill="#3d4a1c"/>
   <!-- bubbles -->
-  <circle cx="196" cy="150" r="26" fill="#fbf7ee" stroke="#6e7a44" stroke-width="8"/>
-  <circle cx="262" cy="120" r="18" fill="#fbf7ee" stroke="#6e7a44" stroke-width="8"/>
-  <circle cx="318" cy="156" r="14" fill="#fbf7ee" stroke="#6e7a44" stroke-width="8"/>
+  <circle cx="196" cy="150" r="26" fill="#ffffff" stroke="#4a5d23" stroke-width="8"/>
+  <circle cx="262" cy="120" r="18" fill="#ffffff" stroke="#4a5d23" stroke-width="8"/>
+  <circle cx="318" cy="156" r="14" fill="#ffffff" stroke="#4a5d23" stroke-width="8"/>
   <!-- olive accent -->
-  <ellipse cx="256" cy="300" rx="40" ry="30" fill="#b25c3b"/>
-  <ellipse cx="256" cy="300" rx="16" ry="11" fill="#fbf7ee"/>
+  <ellipse cx="256" cy="300" rx="40" ry="30" fill="#7a8c3f"/>
+  <ellipse cx="256" cy="300" rx="16" ry="11" fill="#f5f2e9"/>
 </svg>

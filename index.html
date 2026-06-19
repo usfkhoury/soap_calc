@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="color-scheme" content="light dark" />
-  <meta name="theme-color" content="#f4eee3" />
+  <meta name="theme-color" content="#f5f2e9" />
   <!-- Apply the saved theme (auto | light | dark) before first paint to avoid a flash. -->
   <script>
     (function () {
@@ -22,206 +22,196 @@
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/icon.svg" />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..560&display=swap" rel="stylesheet" />
-
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    /* Vendored from usfkhoury.com (landing_page) — keep palettes in sync there. */
+    /* Design language shared with olive_grove_tracker — olive identity, system
+       font, white cards, subtle shadow. Tokens mirror that app's styles.css. */
     :root, :root[data-theme="light"] {
-      --bg:        #f4eee3;
-      --surface:   #fbf7ee;
-      --text:      #2f2a22;
-      --muted:     #7c7363;
-      --line:      #e4dac8;
-      --olive:     #6e7a44;
-      --olive-deep:#54603a;
-      --terracotta:#b25c3b;
-      --shadow:    20px 30px -24px rgba(58, 46, 30, 0.45);
+      --olive-dark: #3d4a1c;
+      --olive: #4a5d23;
+      --olive-light: #7a8c3f;
+      --olive-pale: #e8ebd9;
+      --bg: #f5f2e9;
+      --card: #ffffff;
+      --text: #2b2b23;
+      --muted: #7a776b;
+      --danger: #a83232;
+      --gold: #c9a227;
+      --radius: 12px;
+      --shadow: 0 1px 3px rgba(43, 43, 35, 0.12);
+      --border: #e3e0d4;
+      --hairline: #efede3;
+      --input-bg: #ffffff;
+      --input-border: #d8d5c8;
+      --chip-gold-bg: #f3ead0;
+      --chip-gold-text: #7c6414;
     }
     :root[data-theme="dark"] {
-      --bg:        #1a1711;
-      --surface:   #241f17;
-      --text:      #ece4d5;
-      --muted:     #a89a83;
-      --line:      #332d22;
-      --olive:     #9aa765;
-      --olive-deep:#b3bd80;
-      --terracotta:#cf7a52;
-      --shadow:    20px 30px -24px rgba(0, 0, 0, 0.6);
+      --olive-dark: #aebf72;
+      --olive: #8aa046;
+      --olive-light: #9bb157;
+      --olive-pale: #2f3325;
+      --bg: #15170f;
+      --card: #20231a;
+      --text: #e8e6da;
+      --muted: #a3a08f;
+      --danger: #e07a6f;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+      --border: #343829;
+      --hairline: #30342699;
+      --input-bg: #1a1c14;
+      --input-border: #3d4231;
+      --chip-gold-bg: #3a3320;
+      --chip-gold-text: #e0c873;
     }
     @media (prefers-color-scheme: dark) {
       :root[data-theme="auto"], :root:not([data-theme]) {
-        --bg:        #1a1711;
-        --surface:   #241f17;
-        --text:      #ece4d5;
-        --muted:     #a89a83;
-        --line:      #332d22;
-        --olive:     #9aa765;
-        --olive-deep:#b3bd80;
-        --terracotta:#cf7a52;
-        --shadow:    20px 30px -24px rgba(0, 0, 0, 0.6);
+        --olive-dark: #aebf72;
+        --olive: #8aa046;
+        --olive-light: #9bb157;
+        --olive-pale: #2f3325;
+        --bg: #15170f;
+        --card: #20231a;
+        --text: #e8e6da;
+        --muted: #a3a08f;
+        --danger: #e07a6f;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+        --border: #343829;
+        --hairline: #30342699;
+        --input-bg: #1a1c14;
+        --input-border: #3d4231;
+        --chip-gold-bg: #3a3320;
+        --chip-gold-text: #e0c873;
       }
     }
 
+    * { box-sizing: border-box; }
     body {
-      min-height: 100dvh;
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
       background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       -webkit-font-smoothing: antialiased;
-      line-height: 1.5;
     }
-    .wrap { max-width: 640px; margin: 0 auto; padding: 2.2rem 1.1rem 4rem; }
 
-    h1 {
-      font-family: "Fraunces", Georgia, serif;
-      font-weight: 500;
-      font-size: clamp(1.7rem, 5vw, 2.3rem);
-      letter-spacing: -0.01em;
+    /* ---------- top bar (matches olive_grove_tracker) ---------- */
+    header.topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px calc(10px + env(safe-area-inset-top));
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
     }
-    h1 .soap { color: var(--olive); }
-    .lede { color: var(--muted); margin-top: 0.3rem; max-width: 48ch; }
-    h2 {
-      font-family: "Fraunces", Georgia, serif;
-      font-weight: 500;
-      font-size: 1.25rem;
-      margin-bottom: 0.2rem;
+    .topbar .left { display: flex; align-items: center; gap: 8px; }
+    .topbar .brand { font-weight: 700; font-size: 0.95rem; color: var(--olive-dark); display: flex; align-items: center; gap: 6px; }
+    .back-home {
+      display: flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; font-size: 1.2rem; line-height: 1;
+      color: var(--olive-dark); background: var(--olive-pale);
+      border-radius: 999px; text-decoration: none;
     }
-    .section-note { color: var(--muted); font-size: 0.9rem; margin-bottom: 0.9rem; }
+    .theme-toggle {
+      font: inherit; border: 0; cursor: pointer;
+      background: var(--olive-pale); color: var(--olive-dark);
+      padding: 6px 10px; font-size: 1rem; line-height: 1; border-radius: 999px;
+    }
+
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 16px 16px calc(40px + env(safe-area-inset-bottom));
+    }
+    .lede { color: var(--muted); font-size: 0.9rem; margin: 6px 2px 4px; }
+
+    h2 { font-size: 1.05rem; margin: 0 0 4px; color: var(--olive-dark); }
+    .section-note { color: var(--muted); font-size: 0.82rem; margin-bottom: 12px; }
 
     .card {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 14px;
+      background: var(--card);
+      border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 1.3rem 1.2rem;
-      margin-top: 1.5rem;
+      padding: 14px;
+      margin-top: 12px;
     }
 
-    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.3rem; }
-    .field { margin-bottom: 0.9rem; }
-    .row { display: flex; gap: 0.8rem; flex-wrap: wrap; }
-    .row > .field { flex: 1 1 8rem; }
+    label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+    .field { margin-bottom: 10px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
     input[type="number"], input[type="date"], input[type="text"], input[type="password"] {
       width: 100%;
       font: inherit;
       font-variant-numeric: tabular-nums;
       color: var(--text);
-      background: var(--bg);
-      border: 1px solid var(--line);
-      border-radius: 9px;
-      padding: 0.55rem 0.65rem;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      padding: 10px;
     }
-    input:focus-visible { outline: none; border-color: var(--terracotta); box-shadow: 0 0 0 3px color-mix(in srgb, var(--terracotta) 22%, transparent); }
+    input:focus-visible { outline: 2px solid var(--olive-light); outline-offset: 1px; }
 
-    .btn {
-      font: inherit;
-      cursor: pointer;
-      border-radius: 9px;
-      padding: 0.55rem 1rem;
-      border: 1px solid var(--terracotta);
-      background: var(--terracotta);
-      color: #fff;
-      transition: filter 0.15s ease;
+    button.btn {
+      font: inherit; cursor: pointer; border: 0;
+      border-radius: 8px; padding: 10px 16px;
+      background: var(--olive); color: #fff; font-weight: 600;
     }
-    .btn:hover { filter: brightness(1.06); }
-    .btn.ghost { background: transparent; color: var(--terracotta); }
-    .btn.small { padding: 0.35rem 0.7rem; font-size: 0.85rem; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+    button.btn.ghost { background: var(--olive-pale); color: var(--olive-dark); }
+    button.btn.small { padding: 6px 10px; font-size: 0.8rem; }
+    button.btn:disabled { opacity: 0.6; cursor: default; }
 
-    /* Calculator outputs */
-    .outputs { display: flex; gap: 0.7rem; flex-wrap: wrap; margin-top: 0.4rem; }
-    .out {
-      flex: 1 1 7rem;
-      background: color-mix(in srgb, var(--olive) 12%, transparent);
-      border: 1px solid var(--line);
-      border-radius: 11px;
-      padding: 0.8rem 0.9rem;
-    }
-    .out .k { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
-    .out .v {
-      font-family: "Fraunces", Georgia, serif;
-      font-variant-numeric: tabular-nums;
-      font-size: 1.7rem;
-      line-height: 1.1;
-      margin-top: 0.15rem;
-    }
-    .out .u { font-size: 0.9rem; color: var(--muted); }
+    /* Calculator outputs — olive-pale stat tiles. */
+    .outputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 4px; }
+    .out { background: var(--olive-pale); border-radius: var(--radius); padding: 12px; }
+    .out .k { font-size: 0.78rem; color: var(--muted); }
+    .out .v { font-size: 1.5rem; font-weight: 700; color: var(--olive-dark); font-variant-numeric: tabular-nums; line-height: 1.15; }
+    .out .u { font-size: 0.85rem; color: var(--muted); font-weight: 400; }
 
-    .hint { font-size: 0.82rem; color: var(--muted); margin-top: 0.5rem; }
-    .warn {
-      font-size: 0.85rem;
-      border-left: 3px solid var(--terracotta);
-      padding: 0.4rem 0 0.4rem 0.7rem;
-      margin-top: 0.8rem;
-      color: var(--text);
-    }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+    .warn { font-size: 0.84rem; border-left: 3px solid var(--danger); padding: 4px 0 4px 10px; margin-top: 12px; }
 
-    ol.steps { margin: 0.2rem 0 0 1.1rem; }
-    ol.steps li { margin-bottom: 0.45rem; }
+    ol.steps { margin: 4px 0 0 1.1rem; padding: 0; }
+    ol.steps li { margin-bottom: 7px; }
 
-    details { border-top: 1px solid var(--line); padding-top: 0.7rem; margin-top: 0.7rem; }
+    details { border-top: 1px solid var(--hairline); padding-top: 10px; margin-top: 10px; }
     details:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
-    summary { cursor: pointer; font-weight: 500; color: var(--olive-deep); }
-    details > *:not(summary) { margin-top: 0.5rem; }
-    details p { margin-bottom: 0.5rem; }
+    summary { cursor: pointer; font-weight: 600; color: var(--olive-dark); }
+    details > *:not(summary) { margin-top: 8px; }
+    details p { margin: 0 0 8px; }
 
-    .batch { border: 1px solid var(--line); border-radius: 11px; padding: 0.8rem 0.9rem; margin-top: 0.8rem; }
-    .batch .top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
-    .batch h3 { font-family: "Fraunces", serif; font-weight: 500; font-size: 1.05rem; }
-    .pill { font-size: 0.72rem; padding: 0.12rem 0.55rem; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
-    .pill.cured { color: var(--olive-deep); border-color: var(--olive); }
-    .meta { font-size: 0.82rem; color: var(--muted); margin-top: 0.25rem; }
-    .cure-row { display: flex; gap: 0.4rem; align-items: center; font-size: 0.85rem; margin-top: 0.3rem; font-variant-numeric: tabular-nums; }
-    .spark { display: flex; align-items: flex-end; gap: 2px; height: 34px; margin-top: 0.5rem; }
-    .spark span { flex: 1; background: var(--olive); border-radius: 2px 2px 0 0; min-height: 2px; opacity: 0.85; }
+    .batch { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-top: 10px; }
+    .batch .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .batch h3 { font-size: 0.95rem; margin: 0; font-weight: 700; }
+    .pill { font-size: 0.72rem; padding: 2px 10px; border-radius: 999px; background: var(--olive-pale); color: var(--olive-dark); white-space: nowrap; }
+    .pill.cured { background: var(--chip-gold-bg); color: var(--chip-gold-text); }
+    .meta { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+    .cure-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-variant-numeric: tabular-nums; }
+    .spark { display: flex; align-items: flex-end; gap: 2px; height: 34px; margin-top: 8px; }
+    .spark span { flex: 1; background: var(--olive-light); border-radius: 2px 2px 0 0; min-height: 2px; }
 
-    .status-line { font-size: 0.82rem; color: var(--muted); margin-top: 1.2rem; text-align: center; }
-    .net-off { color: var(--terracotta); }
+    .status-line { font-size: 0.8rem; color: var(--muted); margin-top: 16px; text-align: center; }
+    .net-off { color: var(--danger); }
 
-    .theme-toggle {
-      position: fixed; top: 1rem; right: 1rem; z-index: 10;
-      width: 38px; height: 38px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1rem; line-height: 1;
-      color: var(--muted); background: var(--surface);
-      border: 1px solid var(--line); border-radius: 999px; cursor: pointer;
-      transition: color 0.18s ease, border-color 0.18s ease;
-    }
-    .theme-toggle:hover, .theme-toggle:focus-visible { color: var(--terracotta); border-color: var(--terracotta); outline: none; }
-
-    /* Back-to-home — same idea as olive_grove_tracker's ← button. */
-    .back-home {
-      position: fixed; top: 1rem; left: 1rem; z-index: 10;
-      width: 38px; height: 38px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.2rem; line-height: 1; text-decoration: none;
-      color: var(--olive-deep); background: var(--surface);
-      border: 1px solid var(--line); border-radius: 999px;
-      transition: color 0.18s ease, border-color 0.18s ease;
-    }
-    .back-home:hover, .back-home:focus-visible { color: var(--terracotta); border-color: var(--terracotta); outline: none; }
-
-    a { color: var(--terracotta); }
-    .foot { margin-top: 2rem; font-size: 0.8rem; color: var(--muted); text-align: center; }
+    a { color: var(--olive); }
+    .foot { margin-top: 20px; font-size: 0.78rem; color: var(--muted); text-align: center; }
 
     @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
   </style>
 </head>
 <body>
-  <a class="back-home" href="https://usfkhoury.com" title="Back to home" aria-label="Back to home">←</a>
-  <button id="theme-toggle" class="theme-toggle" type="button"
-          aria-label="Theme: auto (system)" title="Theme: auto (system)">◐</button>
+  <header class="topbar">
+    <div class="left">
+      <a class="back-home" href="https://usfkhoury.com" title="Back to home" aria-label="Back to home">←</a>
+      <span class="brand">🧼 soap_calc</span>
+    </div>
+    <button id="theme-toggle" class="theme-toggle" type="button"
+            aria-label="Theme: auto (system)" title="Theme: auto (system)">◐</button>
+  </header>
 
-  <div class="wrap">
-    <header>
-      <h1><span class="soap">🧼</span> soap_calc</h1>
-      <p class="lede">Weight-based calculator for 100% olive-oil (castile) soap. Weigh your oil, get exact lye &amp; water — no SoapCalc, works offline.</p>
-    </header>
+  <main>
+    <p class="lede">Weight-based calculator for 100% olive-oil (castile) soap. Weigh your oil, get exact lye &amp; water — no SoapCalc, works offline.</p>
 
     <!-- ============ CALCULATOR ============ -->
     <section class="card" aria-labelledby="calc-h">
@@ -383,9 +373,9 @@
 
     <p class="status-line" id="status">Loading…</p>
     <p class="foot">soap_calc · <a href="https://usfkhoury.com">usfkhoury.com</a></p>
-  </div>
+  </main>
 
-  <!-- Theme toggle: cycles auto → light → dark, persisted in localStorage. Vendored from landing_page. -->
+  <!-- Theme toggle: cycles auto → light → dark, persisted in localStorage. -->
   <script>
     (function () {
       var root = document.documentElement;
@@ -401,7 +391,7 @@
         var r = resolved(mode);
         root.style.colorScheme = r;
         var meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute('content', r === 'dark' ? '#1a1711' : '#f4eee3');
+        if (meta) meta.setAttribute('content', r === 'dark' ? '#15170f' : '#f5f2e9');
         btn.textContent = icon[mode]; btn.setAttribute('aria-label', label[mode]); btn.title = label[mode];
       }
       apply(root.getAttribute('data-theme') || 'auto');

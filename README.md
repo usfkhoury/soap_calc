@@ -28,7 +28,7 @@ Static, **no build step** — open `index.html` and it runs. A service worker ma
 installable, offline-first PWA. One Netlify Function handles Notion persistence.
 
 ```
-index.html              app shell + styles (design tokens vendored from usfkhoury.com)
+index.html              app shell + styles (shares olive_grove_tracker's design language)
 calc.js                 pure soap math (lye/water/scaling/cure-plateau) — no DOM
 app.js                  UI, localStorage mirror, offline write-queue, Notion sync
 sw.js                   service worker — precaches the shell for offline use
