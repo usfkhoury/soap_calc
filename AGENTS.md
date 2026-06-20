@@ -1,4 +1,4 @@
-# soap_calc
+# Soap Calculator
 
 Offline-first, weight-based soap calculator + cure tracker for 100% olive-oil
 (castile) soap. See `README.md` for the build and `CONTEXT.md` for the domain

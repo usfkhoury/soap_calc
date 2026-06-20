@@ -1,4 +1,4 @@
-# soap_calc
+# Soap Calculator
 
 A small, offline-first soap calculator + cure tracker for **100% olive oil (castile) soap**,
 deployed at **soap.usfkhoury.com**.

@@ -1,4 +1,4 @@
-# soap_calc — context
+# Soap Calculator — context
 
 The single glossary for this project. Domain language only — no implementation
 detail. (See `docs/adr/` for decisions, `README.md` for the build.)
