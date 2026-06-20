@@ -10,7 +10,9 @@ its weekly cure weights to a Notion database, and explains the science behind ev
 
 ## Recipe defaults
 
-All measurements are **by weight, in grams**.
+All measurements are **by weight** — work in **kg or g** (toggle in the top bar; stored
+canonically as grams). You can start from the oil weight *or* from a bar count + bar weight;
+the calculator solves whichever you didn't enter (oil is the anchor).
 
 - **Lye** = `oil × SAP × (1 − superfat)`, olive oil SAP = `0.135`
   - default superfat **5%** → `lye = oil × 0.128`

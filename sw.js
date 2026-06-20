@@ -5,7 +5,7 @@
  * tool) so it works with no internet. API calls (/api/*) are never cached; the
  * app keeps its own localStorage mirror for offline reads and queues writes.
  */
-var VERSION = 'soap-v1';
+var VERSION = 'soap-v2';
 var SHELL = [
   '/',
   '/index.html',

@@ -10,9 +10,11 @@ Soap made from 100% olive oil. The only kind this tool supports. Mild and
 conditioning by nature, but soft and slow to harden — the problems the defaults
 are tuned to fight.
 
-**Lye** (NaOH, caustic soda, _atroun_)
-The strong alkali that reacts with oil to make soap. Sold as flakes or beads.
-Caustic and dangerous; always weighed, never measured by volume.
+**Lye**
+The strong alkali that reacts with oil to make soap. **Sodium hydroxide (NaOH,
+caustic soda, _atroun_) is the default** — it makes solid bar soap, this app's
+focus. Potassium hydroxide (KOH) makes soft/liquid soap and has different SAP
+values. Caustic and dangerous; always weighed, never measured by volume.
 _Avoid_: "soda", "ash".
 
 **Oil**
@@ -24,8 +26,9 @@ The reaction `oil + lye → soap + glycerin`. Every fat needs a precise lye amou
 to fully react.
 
 **SAP value**
-A fat's "lye appetite" — grams of lye that fully react with 1 g of it. Olive
-oil ≈ **0.135**. The constant that lets one oil collapse to one multiplier.
+A fat's "lye appetite" — grams of lye that fully react with 1 g of it. **Depends
+on the lye:** olive oil ≈ **0.135** with NaOH (the default), ≈ 0.19 with KOH. The
+constant that lets one oil collapse to one multiplier.
 
 **Superfat**
 The share of oil deliberately left un-saponified by using slightly less lye than
@@ -53,4 +56,6 @@ One make: a quantity of oil turned into soap on a given day, with its recipe
 numbers, bars produced, notes, and cure-weight history.
 
 **Bar**
-One finished cake of soap cut/poured from a batch.
+One finished cake of soap cut/poured from a batch. Its **poured (fresh) weight**
+is set at the mold; the bar loses ~15% as it cures (water evaporates) to its
+**cured weight**.

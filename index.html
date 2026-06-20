@@ -118,6 +118,13 @@
       background: var(--olive-pale); color: var(--olive-dark);
       padding: 6px 10px; font-size: 1rem; line-height: 1; border-radius: 999px;
     }
+    .actions { display: flex; align-items: center; gap: 6px; }
+    .unit-toggle {
+      font: inherit; border: 0; cursor: pointer;
+      background: var(--olive-pale); color: var(--olive-dark);
+      padding: 6px 10px; font-size: 0.85rem; font-weight: 600; line-height: 1;
+      border-radius: 999px; min-width: 36px;
+    }
 
     main {
       max-width: 760px;
@@ -206,8 +213,11 @@
       <a class="back-home" href="https://usfkhoury.com" title="Back to home" aria-label="Back to home">←</a>
       <span class="brand">🧼 Soap Calculator</span>
     </div>
-    <button id="theme-toggle" class="theme-toggle" type="button"
-            aria-label="Theme: auto (system)" title="Theme: auto (system)">◐</button>
+    <div class="actions">
+      <button id="unit-toggle" class="unit-toggle" type="button" aria-label="Units: kilograms" title="Units: kilograms">kg</button>
+      <button id="theme-toggle" class="theme-toggle" type="button"
+              aria-label="Theme: auto (system)" title="Theme: auto (system)">◐</button>
+    </div>
   </header>
 
   <main>
@@ -216,11 +226,22 @@
     <!-- ============ CALCULATOR ============ -->
     <section class="card" aria-labelledby="calc-h">
       <h2 id="calc-h">Calculator</h2>
-      <p class="section-note">Everything by weight, in grams. Defaults give a firm, mild castile bar.</p>
+      <p class="section-note">Everything by weight. Defaults give a firm, mild castile bar.</p>
 
       <div class="field">
-        <label for="oil">Olive oil (g)</label>
-        <input id="oil" type="number" inputmode="decimal" min="0" step="1" value="1000" />
+        <label for="oil">Olive oil (<span class="u-unit">kg</span>)</label>
+        <input id="oil" type="number" inputmode="decimal" min="0" step="any" value="1" />
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="bars">Bars (estimate)</label>
+          <input id="bars" type="number" inputmode="numeric" min="1" step="1" value="13" />
+        </div>
+        <div class="field">
+          <label for="bar-weight">Bar weight, fresh (<span class="u-unit">kg</span>)</label>
+          <input id="bar-weight" type="number" inputmode="decimal" min="0" step="any" value="0.1" />
+        </div>
       </div>
 
       <div class="row">
@@ -235,46 +256,30 @@
       </div>
 
       <div class="outputs">
-        <div class="out"><div class="k">Lye (NaOH)</div><div><span class="v" id="out-lye">128</span> <span class="u">g</span></div></div>
-        <div class="out"><div class="k">Water</div><div><span class="v" id="out-water">192</span> <span class="u">g</span></div></div>
-        <div class="out"><div class="k">Total batch</div><div><span class="v" id="out-total">1320</span> <span class="u">g</span></div></div>
+        <div class="out"><div class="k">Lye (NaOH)</div><div><span class="v" id="out-lye">128</span> <span class="u u-unit">kg</span></div></div>
+        <div class="out"><div class="k">Water</div><div><span class="v" id="out-water">192</span> <span class="u u-unit">kg</span></div></div>
+        <div class="out"><div class="k">Total batch</div><div><span class="v" id="out-total">1320</span> <span class="u u-unit">kg</span></div></div>
       </div>
 
       <p class="hint" id="calc-explain"></p>
+      <p class="hint">Start from oil, or type a <strong>Bars</strong> count to work backwards. Bar weight is the <em>fresh / poured</em> weight — bars cure ~15% lighter.</p>
 
       <details>
         <summary>Advanced</summary>
         <div class="field">
-          <label for="sap">Olive oil SAP value (g NaOH per g oil)</label>
-          <input id="sap" type="number" inputmode="decimal" min="0.12" max="0.15" step="0.001" value="0.135" />
+          <label for="sap">SAP value (g lye per g oil)</label>
+          <input id="sap" type="number" inputmode="decimal" min="0.10" max="0.30" step="0.001" value="0.135" />
         </div>
-        <p class="hint">Assumes ~99% pure caustic soda. If your lye is less pure, increase it proportionally.</p>
+        <p class="hint">Defaults to olive oil with <strong>NaOH</strong> (0.135) — the lye for solid bar soap. Use a different value for another oil, or for KOH (~0.19). Assumes ~99% pure lye; if yours is less pure, increase it proportionally.</p>
       </details>
 
       <p class="warn">⚠️ Always weigh on a scale, wear gloves + eye protection, work in ventilation, and <strong>add lye to the water — never water to lye</strong>.</p>
     </section>
 
-    <!-- ============ SCALE BY BARS ============ -->
-    <section class="card" aria-labelledby="bars-h">
-      <h2 id="bars-h">Scale by bars</h2>
-      <p class="section-note">Work backwards from how many bars you want.</p>
-      <div class="row">
-        <div class="field">
-          <label for="bars-want">Bars wanted</label>
-          <input id="bars-want" type="number" inputmode="numeric" min="1" step="1" value="10" />
-        </div>
-        <div class="field">
-          <label for="g-per-bar">Oil per bar (g)</label>
-          <input id="g-per-bar" type="number" inputmode="decimal" min="1" step="1" value="100" />
-        </div>
-      </div>
-      <button class="btn ghost small" id="apply-bars" type="button">Set oil to <span id="bars-oil">1000</span> g →</button>
-      <p class="hint">"Oil per bar" is remembered. Tune it once you know your molds.</p>
-    </section>
 
     <!-- ============ BATCH LOG + CURE TRACKER ============ -->
     <section class="card" aria-labelledby="log-h">
-      <h2 id="log-h">Batch log &amp; cure tracker</h2>
+      <h2 id="log-h">Batch log &amp; Cure Tracker</h2>
       <p class="section-note">Save a batch, then weigh it weekly. When the weight stops dropping, it's cured.</p>
 
       <div class="row">
@@ -340,7 +345,7 @@
 
       <details>
         <summary>SAP value — each oil's "lye appetite"</summary>
-        <p>Every fat has a known number — its <strong>saponification (SAP) value</strong> — for how much lye fully reacts with 1 g of it. Olive oil's is about <strong>0.135 g lye per g oil</strong>. Because we only ever use one oil, the whole calculation collapses to a single multiplier; that's why SoapCalc's big oil database is overkill here.</p>
+        <p>Every fat has a known number — its <strong>saponification (SAP) value</strong> — for how much lye fully reacts with 1 g of it. The value depends on the lye: olive oil is about <strong>0.135 g lye per g oil with NaOH</strong> (the default here — the lye for solid bar soap), or ~0.19 with KOH (soft/liquid soap). Because we only ever use one oil, the whole calculation collapses to a single multiplier; that's why SoapCalc's big oil database is overkill here.</p>
       </details>
 
       <details>
