@@ -2,21 +2,22 @@
  * app.js — UI wiring, persistence, and offline sync for the Soap Calculator.
  *
  * Offline-first: the calculator, the oil⇄bars linkage, and the steps are pure
- * client-side and always work. Batch records + weekly cure weights mirror to
- * localStorage and sync to Notion (via the /api/soap function) when online;
- * writes made offline queue and flush on reconnect.
+ * client-side and always work. The batch log + cure history are public to read;
+ * adding batches / logging cure weights requires the OWNER to sign in with
+ * Google (Google Identity Services). The ID token is sent as a Bearer header and
+ * verified by the /api/soap function. Writes made offline queue and flush on
+ * reconnect (re-signing in if the token has expired).
  *
- * Units: the user works in kg or g (toggle). Grams are the canonical stored unit
- * (and what Notion holds); the UI converts for display only.
+ * Units: kg or g (toggle); grams are the canonical stored unit (and Notion's).
  */
 (function () {
   'use strict';
 
   var API = '/api/soap';
+  var CLIENT_ID = (document.querySelector('meta[name="google-client-id"]') || {}).content || '';
   var K = {
-    inputs: 'soap.inputs',     // { oil, superfat, conc, sap, barWeight } — weights in GRAMS
-    unit: 'soap.unit',         // 'kg' | 'g'
-    secret: 'soap.secret',
+    inputs: 'soap.inputs',   // { oil, superfat, conc, sap, barWeight } — weights in GRAMS
+    unit: 'soap.unit',       // 'kg' | 'g'
     batches: 'soap.batches',
     queue: 'soap.queue'
   };
@@ -28,9 +29,9 @@
     outLye: $('out-lye'), outWater: $('out-water'), outTotal: $('out-total'),
     explain: $('calc-explain'),
     batchBars: $('batch-bars'), batchNotes: $('batch-notes'), saveBatch: $('save-batch'),
-    batches: $('batches'),
-    secret: $('secret'), saveSecret: $('save-secret'), refresh: $('refresh'),
-    status: $('status'), unitToggle: $('unit-toggle')
+    batches: $('batches'), refresh: $('refresh'),
+    status: $('status'), unitToggle: $('unit-toggle'),
+    authArea: $('auth-area'), writeForm: $('write-form')
   };
 
   // ---------- storage ----------
@@ -43,11 +44,8 @@
   // ---------- units ----------
   var unit = load(K.unit, 'kg');
   function gPerUnit() { return unit === 'kg' ? 1000 : 1; }
-  function toGrams(v) { return (parseFloat(v) || 0) * gPerUnit(); }      // display value → grams
-  function fmtWeight(g) {                                                // grams → display string
-    if (unit === 'kg') return (g / 1000).toFixed(3);
-    return String(Math.round(g * 10) / 10);
-  }
+  function toGrams(v) { return (parseFloat(v) || 0) * gPerUnit(); }
+  function fmtWeight(g) { return unit === 'kg' ? (g / 1000).toFixed(3) : String(Math.round(g * 10) / 10); }
   function round2(n) { return Math.round(n * 100) / 100; }
 
   function applyUnitLabels() {
@@ -61,24 +59,14 @@
   function setUnit(next) {
     if (next === unit) return;
     var oilG = toGrams(el.oil.value), bwG = toGrams(el.barWeight.value);
-    unit = next;
-    save(K.unit, unit);
-    el.oil.value = fmtWeight(oilG);
-    el.barWeight.value = fmtWeight(bwG);
-    applyUnitLabels();
-    recomputeFromOil();
-    render(); // re-format batch + cure weights in the new unit
+    unit = next; save(K.unit, unit);
+    el.oil.value = fmtWeight(oilG); el.barWeight.value = fmtWeight(bwG);
+    applyUnitLabels(); recomputeFromOil(); render();
   }
 
   // ---------- calculator ----------
-  function readOpts() {
-    return { sap: parseFloat(el.sap.value), superfat: parseFloat(el.superfat.value), concentration: parseFloat(el.conc.value) };
-  }
-  function paintOutputs(r) {
-    el.outLye.textContent = fmtWeight(r.lye);
-    el.outWater.textContent = fmtWeight(r.water);
-    el.outTotal.textContent = fmtWeight(r.total);
-  }
+  function readOpts() { return { sap: parseFloat(el.sap.value), superfat: parseFloat(el.superfat.value), concentration: parseFloat(el.conc.value) }; }
+  function paintOutputs(r) { el.outLye.textContent = fmtWeight(r.lye); el.outWater.textContent = fmtWeight(r.water); el.outTotal.textContent = fmtWeight(r.total); }
   function paintExplain(opts) {
     el.explain.textContent =
       'lye = oil × ' + opts.sap + ' × (1 − ' + opts.superfat + '%) ;  ' +
@@ -86,44 +74,74 @@
       ' (' + opts.concentration + '% concentration)';
   }
   function persistInputs(oilG) {
-    save(K.inputs, {
-      oil: oilG, superfat: el.superfat.value, conc: el.conc.value, sap: el.sap.value,
-      barWeight: toGrams(el.barWeight.value)
-    });
+    save(K.inputs, { oil: oilG, superfat: el.superfat.value, conc: el.conc.value, sap: el.sap.value, barWeight: toGrams(el.barWeight.value) });
   }
-
-  // Oil is the anchor: oil/bar-weight/superfat/conc/sap drive everything; the
-  // Bars field is a readout (recomputeFromBars handles typing into it).
   function recomputeFromOil() {
-    var oilG = toGrams(el.oil.value), opts = readOpts();
-    var r = SoapCalc.recipe(oilG, opts);
+    var oilG = toGrams(el.oil.value), opts = readOpts(), r = SoapCalc.recipe(oilG, opts);
     paintOutputs(r);
     el.bars.value = Math.max(0, Math.round(SoapCalc.barsFromOil(oilG, toGrams(el.barWeight.value), opts)));
-    paintExplain(opts);
-    persistInputs(oilG);
+    paintExplain(opts); persistInputs(oilG);
   }
   function recomputeFromBars() {
     var opts = readOpts();
     var oilG = SoapCalc.oilForBars(parseFloat(el.bars.value) || 0, toGrams(el.barWeight.value), opts);
     el.oil.value = fmtWeight(oilG);
-    paintOutputs(SoapCalc.recipe(oilG, opts));
-    paintExplain(opts);
-    persistInputs(oilG);
+    paintOutputs(SoapCalc.recipe(oilG, opts)); paintExplain(opts); persistInputs(oilG);
   }
-
-  ['oil', 'barWeight', 'superfat', 'conc', 'sap'].forEach(function (k) {
-    el[k].addEventListener('input', recomputeFromOil);
-  });
+  ['oil', 'barWeight', 'superfat', 'conc', 'sap'].forEach(function (k) { el[k].addEventListener('input', recomputeFromOil); });
   el.bars.addEventListener('input', recomputeFromBars);
   el.unitToggle.addEventListener('click', function () { setUnit(unit === 'kg' ? 'g' : 'kg'); });
 
+  // ---------- auth (Google, owner-only writes) ----------
+  var idToken = null, ownerEmail = '', isOwner = false;
+  function gisReady() { return !!(window.google && google.accounts && google.accounts.id); }
+  function parseJwt(t) { try { return JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); } catch (e) { return {}; } }
+
+  function setupAuth(tries) {
+    if (!CLIENT_ID) { renderAuth(); return; }
+    if (!gisReady()) { if ((tries || 0) < 20) { setTimeout(function () { setupAuth((tries || 0) + 1); }, 250); } else { renderAuth(); } return; }
+    google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onCredential, auto_select: true });
+    renderAuth();
+  }
+  function onCredential(resp) {
+    idToken = resp.credential;
+    ownerEmail = parseJwt(idToken).email || '';
+    isOwner = true;
+    renderAuth(); render(); setStatus(); flush();
+  }
+  function signOut() {
+    idToken = null; ownerEmail = ''; isOwner = false;
+    try { google.accounts.id.disableAutoSelect(); } catch (e) {}
+    renderAuth(); render(); setStatus();
+  }
+  function renderAuth() {
+    var a = el.authArea; a.innerHTML = '';
+    if (!CLIENT_ID) {
+      var w = document.createElement('p'); w.className = 'hint';
+      w.textContent = 'Owner sign-in isn’t configured yet (no Google client ID set).';
+      a.appendChild(w); el.writeForm.hidden = true; return;
+    }
+    if (isOwner) {
+      var who = document.createElement('div'); who.className = 'who';
+      var span = document.createElement('span'); span.textContent = 'Signed in' + (ownerEmail ? ' as ' + ownerEmail : '');
+      var out = document.createElement('button'); out.className = 'btn ghost small'; out.type = 'button'; out.textContent = 'Sign out';
+      out.addEventListener('click', signOut);
+      who.appendChild(span); who.appendChild(out); a.appendChild(who);
+      el.writeForm.hidden = false;
+    } else {
+      var host = document.createElement('div');
+      a.appendChild(host);
+      var note = document.createElement('p'); note.className = 'hint';
+      note.textContent = 'Sign in as the owner to add batches and log cure weights.';
+      a.appendChild(note);
+      el.writeForm.hidden = true;
+      if (gisReady()) try { google.accounts.id.renderButton(host, { theme: 'outline', size: 'medium', text: 'signin_with' }); } catch (e) {}
+    }
+  }
+
   // ---------- network ----------
   function online() { return navigator.onLine !== false; }
-  function authHeaders() {
-    var s = load(K.secret, ''), h = { 'Content-Type': 'application/json' };
-    if (s) h['x-soap-secret'] = s;
-    return h;
-  }
+  function authHeaders() { var h = { 'Content-Type': 'application/json' }; if (idToken) h['Authorization'] = 'Bearer ' + idToken; return h; }
   function apiList() {
     return fetch(API + '?action=list', { headers: { 'Content-Type': 'application/json' } })
       .then(function (r) { if (!r.ok) throw new Error('list ' + r.status); return r.json(); })
@@ -131,10 +149,7 @@
   }
   function apiPost(payload) {
     return fetch(API, { method: 'POST', headers: authHeaders(), body: JSON.stringify(payload) })
-      .then(function (r) {
-        if (!r.ok) return r.text().then(function (t) { throw new Error(payload.action + ' ' + r.status + ' ' + t); });
-        return r.json();
-      });
+      .then(function (r) { if (!r.ok) return r.text().then(function (t) { var e = new Error(payload.action + ' ' + r.status + ' ' + t); e.status = r.status; throw e; }); return r.json(); });
   }
 
   // ---------- batches (grams canonical) ----------
@@ -147,6 +162,7 @@
   function stripLocal(b) { var c = JSON.parse(JSON.stringify(b)); delete c.pending; return c; }
 
   function saveBatch() {
+    if (!isOwner) return;
     var oilG = toGrams(el.oil.value), opts = readOpts(), r = SoapCalc.recipe(oilG, opts);
     var batch = {
       id: newId(), date: new Date().toISOString().slice(0, 10),
@@ -155,15 +171,14 @@
       bars: el.batchBars.value ? parseInt(el.batchBars.value, 10) : null,
       notes: el.batchNotes.value || '', status: 'Curing', cureWeights: [], pending: true
     };
-    var batches = getBatches();
-    batches.unshift(batch);
-    setBatches(batches);
+    var batches = getBatches(); batches.unshift(batch); setBatches(batches);
     el.batchBars.value = ''; el.batchNotes.value = '';
     queueWrite({ action: 'create', clientId: batch.id, batch: stripLocal(batch) });
     setStatus();
   }
 
   function addCureWeight(id, displayWeight) {
+    if (!isOwner) return;
     var wG = toGrams(displayWeight);
     if (!isFinite(wG) || wG <= 0) return;
     var batches = getBatches(), b = find(batches, id);
@@ -179,7 +194,7 @@
   function queueWrite(item) { var q = getQueue(); q.push(item); setQueue(q); flush(); }
   var flushing = false;
   function flush() {
-    if (flushing || !online()) return;
+    if (flushing || !online() || !idToken) return;   // need a signed-in owner token to write
     var q = getQueue();
     if (!q.length) return;
     flushing = true;
@@ -191,10 +206,13 @@
         setBatches(batches);
         q.forEach(function (it) { if (it.id === item.clientId) it.id = res.id; });
       }
-      q.shift(); setQueue(q);
-      flushing = false; setStatus();
+      q.shift(); setQueue(q); flushing = false; setStatus();
       if (q.length) flush();
-    }).catch(function (err) { flushing = false; setStatus(String(err.message || err)); });
+    }).catch(function (err) {
+      flushing = false;
+      if (err.status === 401 || err.status === 403) { idToken = null; isOwner = false; renderAuth(); render(); }
+      setStatus(String(err.message || err));
+    });
   }
 
   // ---------- rendering ----------
@@ -202,48 +220,43 @@
     var batches = getBatches();
     el.batches.innerHTML = '';
     if (!batches.length) {
-      var empty = document.createElement('p');
-      empty.className = 'hint';
-      empty.textContent = 'No batches yet. Save one above after you mix.';
-      el.batches.appendChild(empty);
-      return;
+      var empty = document.createElement('p'); empty.className = 'hint';
+      empty.textContent = 'No batches yet.' + (isOwner ? ' Save one above after you mix.' : '');
+      el.batches.appendChild(empty); return;
     }
     batches.forEach(function (b) { el.batches.appendChild(renderBatch(b)); });
   }
 
   function renderBatch(b) {
     var wrap = document.createElement('div'); wrap.className = 'batch';
-
     var top = document.createElement('div'); top.className = 'top';
     var h3 = document.createElement('h3');
     h3.textContent = b.date + (b.oil ? ' · ' + fmtWeight(b.oil) + ' ' + unit + ' oil' : '');
     var pill = document.createElement('span');
     pill.className = 'pill' + (b.status === 'Cured' ? ' cured' : '');
     pill.textContent = (b.pending ? '⏳ ' : '') + (b.status || 'Curing');
-    top.appendChild(h3); top.appendChild(pill);
-    wrap.appendChild(top);
+    top.appendChild(h3); top.appendChild(pill); wrap.appendChild(top);
 
     var meta = document.createElement('div'); meta.className = 'meta';
     var bits = ['lye ' + fmtWeight(b.lye) + ' ' + unit, 'water ' + fmtWeight(b.water) + ' ' + unit];
     if (b.bars != null) bits.push(b.bars + ' bars');
-    meta.textContent = bits.join(' · ');
-    wrap.appendChild(meta);
+    meta.textContent = bits.join(' · '); wrap.appendChild(meta);
     if (b.notes) { var n = document.createElement('div'); n.className = 'meta'; n.textContent = '“' + b.notes + '”'; wrap.appendChild(n); }
 
     var weights = (b.cureWeights || []).map(function (c) { return c.weight; });
     if (weights.length) wrap.appendChild(sparkline(weights));
 
-    var row = document.createElement('div'); row.className = 'cure-row';
-    var inp = document.createElement('input');
-    inp.type = 'number'; inp.inputMode = 'decimal'; inp.min = '0'; inp.step = 'any';
-    inp.placeholder = 'this week’s bar weight (' + unit + ')'; inp.style.maxWidth = '15rem';
-    var btn = document.createElement('button');
-    btn.className = 'btn ghost small'; btn.type = 'button'; btn.textContent = 'Log weight';
-    btn.addEventListener('click', function () { addCureWeight(b.id, inp.value); inp.value = ''; });
-    inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') btn.click(); });
-    row.appendChild(inp); row.appendChild(btn);
-    wrap.appendChild(row);
-
+    if (isOwner) {
+      var row = document.createElement('div'); row.className = 'cure-row';
+      var inp = document.createElement('input');
+      inp.type = 'number'; inp.inputMode = 'decimal'; inp.min = '0'; inp.step = 'any';
+      inp.placeholder = 'this week’s bar weight (' + unit + ')'; inp.style.maxWidth = '15rem';
+      var btn = document.createElement('button');
+      btn.className = 'btn ghost small'; btn.type = 'button'; btn.textContent = 'Log weight';
+      btn.addEventListener('click', function () { addCureWeight(b.id, inp.value); inp.value = ''; });
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') btn.click(); });
+      row.appendChild(inp); row.appendChild(btn); wrap.appendChild(row);
+    }
     if (weights.length) {
       var info = document.createElement('div'); info.className = 'meta';
       info.textContent = weights.length + ' reading' + (weights.length > 1 ? 's' : '') + ', latest ' + fmtWeight(weights[weights.length - 1]) + ' ' + unit;
@@ -258,8 +271,7 @@
     weights.forEach(function (w) {
       var bar = document.createElement('span');
       bar.style.height = (10 + ((w - min) / span) * 90) + '%';
-      bar.title = fmtWeight(w) + ' ' + unit;
-      s.appendChild(bar);
+      bar.title = fmtWeight(w) + ' ' + unit; s.appendChild(bar);
     });
     return s;
   }
@@ -268,7 +280,7 @@
   function setStatus(err) {
     var q = getQueue(), parts = [online() ? 'Online' : 'Offline'];
     if (q.length) parts.push(q.length + ' change' + (q.length > 1 ? 's' : '') + ' pending sync');
-    if (!load(K.secret, '')) parts.push('set a passphrase to sync writes');
+    if (q.length && !isOwner) parts.push('sign in to sync');
     if (err) parts.push('sync error: ' + err);
     el.status.textContent = parts.join(' · ');
     el.status.className = 'status-line' + (online() ? '' : ' net-off');
@@ -279,15 +291,11 @@
     if (!online()) { setStatus(); return; }
     apiList().then(function (serverBatches) {
       var pending = getBatches().filter(function (b) { return b.pending; });
-      setBatches(pending.concat(serverBatches));
-      setStatus();
+      setBatches(pending.concat(serverBatches)); setStatus();
     }).catch(function (err) { setStatus(String(err.message || err)); });
   }
 
-  // ---------- settings ----------
-  el.saveSecret.addEventListener('click', function () {
-    save(K.secret, el.secret.value || ''); el.secret.value = ''; setStatus(); flush();
-  });
+  // ---------- events ----------
   el.refresh.addEventListener('click', refreshFromServer);
   el.saveBatch.addEventListener('click', saveBatch);
   window.addEventListener('online', function () { setStatus(); flush(); refreshFromServer(); });
@@ -307,7 +315,7 @@
     recomputeFromOil();
     render();
     setStatus();
-    flush();
+    setupAuth();
     refreshFromServer();
   })();
 })();

@@ -40,15 +40,23 @@ icon.svg                app icon
 netlify/functions/soap.js   Notion read/write (the only holder of the token)
 netlify.toml            static publish + /api/soap → function
 CONTEXT.md              domain glossary
-docs/adr/               why weight-based recipe (0001) + offline PWA/Notion (0002)
+docs/adr/               weight-based recipe (0001) · offline PWA/Notion (0002) · Google owner auth (0003)
 ```
 
 ## Offline vs. online
 
 - **Offline tier** (no internet): calculator, scale-by-bars, process/safety steps, Learn, and
   a read-only view of cached history. Installable to a phone home screen.
-- **Online tier**: batch records + weekly cure weights sync to Notion via `/api/soap`. Writes
-  made offline queue in the browser and flush on reconnect.
+- **Online tier**: the batch log + cure history are **public to read**; the **owner** signs in
+  with Google to add batches / log weights. Sync goes to Notion via `/api/soap`. Writes made
+  offline queue in the browser and flush on reconnect (re-signing in if the token expired).
+
+## Auth
+
+Owner-only writes, **public read** (same trust model as olive_grove_tracker). The client signs
+in via Google Identity Services and sends the Google ID token as `Authorization: Bearer …`; the
+function verifies it (audience = `GOOGLE_CLIENT_ID`, `email = OWNER_EMAIL`) before any Notion
+write. No passphrase, no session cookie. See `docs/adr/0003-google-owner-auth.md`.
 
 ## Setup
 
@@ -56,11 +64,12 @@ docs/adr/               why weight-based recipe (0001) + offline PWA/Notion (000
    - `Soap Batches`: `Name` (title), `Date`, `Oil (g)`, `Superfat (%)`, `Concentration (%)`,
      `Lye (g)`, `Water (g)`, `Bars`, `Status` (select: Curing/Cured), `Notes`.
    - `Cure Weights`: `Name` (title), `Batch` (relation → Soap Batches), `Date`, `Weight (g)`.
-2. **Env vars** (Netlify UI, or `.env` for `netlify dev`) — see `.env.example`:
-   `NOTION_TOKEN`, `NOTION_SOAP_DB_ID`, `NOTION_CURE_DB_ID`, `SOAP_WRITE_SECRET`.
-3. **Deploy** — connect the repo to a Netlify site, set the env vars, point
-   `soap.usfkhoury.com` at it. In the app's *Sync settings*, enter the same `SOAP_WRITE_SECRET`
-   to enable writes.
+2. **Google** — reuse olive_grove's OAuth Web client; add `soap.usfkhoury.com` as an authorized
+   JavaScript origin. Put the client ID in `index.html` (`<meta name="google-client-id">`).
+3. **Env vars** (Netlify UI, or `.env` for `netlify dev`) — see `.env.example`:
+   `NOTION_TOKEN`, `NOTION_SOAP_DB_ID`, `NOTION_CURE_DB_ID`, `GOOGLE_CLIENT_ID`, `OWNER_EMAIL`.
+4. **Deploy** — connect the repo to a Netlify site, set the env vars, point
+   `soap.usfkhoury.com` at it. Then click **Sign in** in the batch-log card to enable writes.
 
 ## Local dev
 

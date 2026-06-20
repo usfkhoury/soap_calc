@@ -5,6 +5,7 @@
   "description": "Weight-based olive-oil soap calculator + cure tracker (soap.usfkhoury.com).",
   "license": "MIT",
   "dependencies": {
-    "@notionhq/client": "^2.2.15"
+    "@notionhq/client": "^2.2.15",
+    "google-auth-library": "^9.14.1"
   }
 }

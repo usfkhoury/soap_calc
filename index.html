@@ -22,6 +22,11 @@
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/icon.svg" />
 
+  <!-- Owner write-auth: paste your Google OAuth Web client ID (reuse olive_grove's;
+       add soap.usfkhoury.com as an authorized JavaScript origin). Public value. -->
+  <meta name="google-client-id" content="" />
+  <script src="https://accounts.google.com/gsi/client" async></script>
+
   <style>
     /* Design language shared with olive_grove_tracker — olive identity, system
        font, white cards, subtle shadow. Tokens mirror that app's styles.css. */
@@ -125,6 +130,9 @@
       padding: 6px 10px; font-size: 0.85rem; font-weight: 600; line-height: 1;
       border-radius: 999px; min-width: 36px;
     }
+    .auth-area { margin-bottom: 12px; }
+    .auth-area .who { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.85rem; color: var(--muted); }
+    .auth-area .hint { margin-top: 6px; }
 
     main {
       max-width: 760px;
@@ -281,32 +289,27 @@
     <!-- ============ BATCH LOG + CURE TRACKER ============ -->
     <section class="card" aria-labelledby="log-h">
       <h2 id="log-h">Batch log &amp; Cure Tracker</h2>
-      <p class="section-note">Save a batch, then weigh it weekly. When the weight stops dropping, it's cured.</p>
+      <p class="section-note">Anyone can view the log; sign in as the owner to add batches and log weekly cure weights. When a bar's weight stops dropping, it's cured.</p>
 
-      <div class="row">
-        <div class="field">
-          <label for="batch-bars">Bars produced (optional)</label>
-          <input id="batch-bars" type="number" inputmode="numeric" min="0" step="1" placeholder="e.g. 10" />
+      <div id="auth-area" class="auth-area"></div>
+
+      <div id="write-form" hidden>
+        <div class="row">
+          <div class="field">
+            <label for="batch-bars">Bars produced (optional)</label>
+            <input id="batch-bars" type="number" inputmode="numeric" min="0" step="1" placeholder="e.g. 10" />
+          </div>
+          <div class="field">
+            <label for="batch-notes">Notes (optional)</label>
+            <input id="batch-notes" type="text" placeholder="scent, mold, tweaks…" />
+          </div>
         </div>
-        <div class="field">
-          <label for="batch-notes">Notes (optional)</label>
-          <input id="batch-notes" type="text" placeholder="scent, mold, tweaks…" />
-        </div>
+        <button class="btn" id="save-batch" type="button">Save current batch</button>
       </div>
-      <button class="btn" id="save-batch" type="button">Save current batch</button>
 
       <div id="batches" aria-live="polite"></div>
 
-      <details>
-        <summary>Sync settings</summary>
-        <p class="hint">Batches sync to your Notion database when online. Writes need the shared passphrase (kept only on this device).</p>
-        <div class="field">
-          <label for="secret">Write passphrase</label>
-          <input id="secret" type="password" autocomplete="off" placeholder="SOAP_WRITE_SECRET" />
-        </div>
-        <button class="btn ghost small" id="save-secret" type="button">Save passphrase</button>
-        <button class="btn ghost small" id="refresh" type="button">Refresh from Notion</button>
-      </details>
+      <button class="btn ghost small" id="refresh" type="button">Refresh from Notion</button>
     </section>
 
     <!-- ============ PROCESS & SAFETY ============ -->

@@ -1,20 +1,42 @@
 /*
  * soap.js — Netlify Function: the only thing that holds the Notion token.
  *
- * Reads/writes two Notion databases (Soap Batches + Cure Weights). Reads are
- * open; writes (create / appendCureWeight / updateBars) require the shared
- * passphrase in the `x-soap-secret` header (a light guard for a personal tool,
- * not real auth).
+ * Reads/writes two Notion databases (Soap Batches + Cure Weights). Reads (list)
+ * are open; writes (create / appendCureWeight / updateBars) require a Google
+ * sign-in by the owner: the client sends a Google ID token as
+ * `Authorization: Bearer <token>`, which this function verifies (audience =
+ * GOOGLE_CLIENT_ID, email = OWNER_EMAIL) before touching Notion.
  *
- * Env: NOTION_TOKEN, NOTION_SOAP_DB_ID, NOTION_CURE_DB_ID, SOAP_WRITE_SECRET.
+ * Env: NOTION_TOKEN, NOTION_SOAP_DB_ID, NOTION_CURE_DB_ID,
+ *      GOOGLE_CLIENT_ID, OWNER_EMAIL.
  */
 const { Client } = require('@notionhq/client');
+const { OAuth2Client } = require('google-auth-library');
 
 const SOAP_DB = process.env.NOTION_SOAP_DB_ID;
 const CURE_DB = process.env.NOTION_CURE_DB_ID;
-const SECRET = process.env.SOAP_WRITE_SECRET;
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const OWNER_EMAIL = (process.env.OWNER_EMAIL || '').toLowerCase();
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+
+// Verify a Google ID token belongs to the configured owner. Returns null on success,
+// or an [status, message] pair to reject with.
+async function requireOwner(event) {
+  if (!GOOGLE_CLIENT_ID || !OWNER_EMAIL) return [500, 'auth not configured'];
+  var hdr = event.headers.authorization || event.headers.Authorization || '';
+  var token = hdr.indexOf('Bearer ') === 0 ? hdr.slice(7) : '';
+  if (!token) return [401, 'sign in required'];
+  try {
+    var ticket = await googleClient.verifyIdToken({ idToken: token, audience: GOOGLE_CLIENT_ID });
+    var p = ticket.getPayload();
+    if (!p || !p.email_verified || (p.email || '').toLowerCase() !== OWNER_EMAIL) return [403, 'not the owner'];
+    return null;
+  } catch (e) {
+    return [401, 'invalid or expired sign-in'];
+  }
+}
 
 const json = (statusCode, body) => ({
   statusCode,
@@ -141,8 +163,8 @@ exports.handler = async (event) => {
     }
 
     if (event.httpMethod === 'POST') {
-      const provided = event.headers['x-soap-secret'] || event.headers['X-Soap-Secret'];
-      if (!SECRET || provided !== SECRET) return json(401, { error: 'bad or missing passphrase' });
+      const denied = await requireOwner(event);
+      if (denied) return json(denied[0], { error: denied[1] });
 
       const payload = JSON.parse(event.body || '{}');
       switch (payload.action) {

@@ -59,3 +59,14 @@ numbers, bars produced, notes, and cure-weight history.
 One finished cake of soap cut/poured from a batch. Its **poured (fresh) weight**
 is set at the mold; the bar loses ~15% as it cures (water evaporates) to its
 **cured weight**.
+
+**Owner**
+The single person allowed to write batch and cure data — identified by Google
+sign-in with the email matching the configured owner address. No roles, no
+multiple users. Anyone may **read** the log; only the Owner may **write**.
+_Avoid_: user, admin, account.
+
+**Owner login**
+Proving you are the Owner via Google sign-in. The app checks that the Google
+identity belongs to the owner email before accepting a write.
+_Avoid_: password, "write passphrase" (the superseded mechanism).
