@@ -7,6 +7,7 @@ It replaces SoapCalc for a single-oil recipe: enter your olive oil weight by the
 returns the exact lye and water, with adjustable superfat and lye concentration. It also scales
 by bar count, walks through the process safely, logs each batch (including bars produced) and
 its weekly cure weights to a Notion database, and explains the science behind every number.
+For the rare multi-oil blend it links out to [SoapCalc](https://soapcalc.net/) rather than reimplementing it.
 
 ## Recipe defaults
 
