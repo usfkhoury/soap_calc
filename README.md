@@ -1,82 +1,22 @@
-# Soap Calculator
+# Soap Calc
 
-A small, offline-first soap calculator + cure tracker for **100% olive oil (castile) soap**,
-deployed at **soap.usfkhoury.com**.
+A small web app for soap makers. You type in your oils and how much of each you're using, and it tells you how much lye and water to add so the soap comes out right. It also lets you save a batch to your Notion workspace.
 
-It replaces SoapCalc for a single-oil recipe: enter your olive oil weight by the gram and it
-returns the exact lye and water, with adjustable superfat and lye concentration. It also scales
-by bar count, walks through the process safely, logs each batch (including bars produced) and
-its weekly cure weights to a Notion database, and explains the science behind every number.
-For the rare multi-oil blend it links out to [SoapCalc](https://soapcalc.net/) rather than reimplementing it.
+## How to use it
 
-## Recipe defaults
+- Open the deployed site, or open `index.html` in a browser for a local try.
+- Add oils, enter weights, pick your lye type (NaOH or KOH), set superfat and water amounts, and read the results.
+- Sign in with Google (top of the page) if you want to save the batch to Notion.
 
-All measurements are **by weight** — work in **kg or g** (toggle in the top bar; stored
-canonically as grams). You can start from the oil weight *or* from a bar count + bar weight;
-the calculator solves whichever you didn't enter (oil is the anchor).
+## What's in here
 
-- **Lye** = `oil × SAP × (1 − superfat)`, olive oil SAP = `0.135`
-  - default superfat **5%** → `lye = oil × 0.128`
-- **Water** = `lye × (100 − concentration)/concentration`
-  - default lye concentration **40%** → `water = lye × 1.5 = oil × 0.192`
-- Example — 1000 g oil → **128 g lye**, **192 g water**.
+- `index.html` — the page.
+- `app.js` — the interface: reading inputs, drawing results, handling the save button.
+- `calc.js` — the actual soap math (SAP values, lye, water, superfat).
+- `sw.js`, `manifest.webmanifest`, `icon.svg` — make it installable as an offline PWA.
+- `netlify/functions/soap.js` — tiny backend that receives a saved batch and writes a row to Notion. Needs Notion + Google env vars set in the Netlify dashboard.
+- `netlify.toml`, `package.json` — Netlify build config and backend dependencies.
 
-> ⚠️ Always weigh by scale, wear gloves + eye protection, and **add lye to water — never the
-> reverse**. Lye measured by volume is unsafe because caustic soda's bulk density varies with
-> its form.
+## Deploy
 
-## How it's built
-
-Static, **no build step** — open `index.html` and it runs. A service worker makes it an
-installable, offline-first PWA. One Netlify Function handles Notion persistence.
-
-```
-index.html              app shell + styles (shares olive_grove_tracker's design language)
-calc.js                 pure soap math (lye/water/scaling/cure-plateau) — no DOM
-app.js                  UI, localStorage mirror, offline write-queue, Notion sync
-sw.js                   service worker — precaches the shell for offline use
-manifest.webmanifest    PWA manifest
-icon.svg                app icon
-netlify/functions/soap.js   Notion read/write (the only holder of the token)
-netlify.toml            static publish + /api/soap → function
-CONTEXT.md              domain glossary
-docs/adr/               weight-based recipe (0001) · offline PWA/Notion (0002) · Google owner auth (0003)
-```
-
-## Offline vs. online
-
-- **Offline tier** (no internet): calculator, scale-by-bars, process/safety steps, Learn, and
-  a read-only view of cached history. Installable to a phone home screen.
-- **Online tier**: the batch log + cure history are **public to read**; the **owner** signs in
-  with Google to add batches / log weights. Sync goes to Notion via `/api/soap`. Writes made
-  offline queue in the browser and flush on reconnect (re-signing in if the token expired).
-
-## Auth
-
-Owner-only writes, **public read** (same trust model as olive_grove_tracker). The client signs
-in via Google Identity Services and sends the Google ID token as `Authorization: Bearer …`; the
-function verifies it (audience = `GOOGLE_CLIENT_ID`, `email = OWNER_EMAIL`) before any Notion
-write. No passphrase, no session cookie. See `docs/adr/0003-google-owner-auth.md`.
-
-## Setup
-
-1. **Notion** — two databases shared with an internal integration:
-   - `Soap Batches`: `Name` (title), `Date`, `Oil (g)`, `Superfat (%)`, `Concentration (%)`,
-     `Lye (g)`, `Water (g)`, `Bars`, `Status` (select: Curing/Cured), `Notes`.
-   - `Cure Weights`: `Name` (title), `Batch` (relation → Soap Batches), `Date`, `Weight (g)`.
-2. **Google** — reuse olive_grove's OAuth Web client; add `soap.usfkhoury.com` as an authorized
-   JavaScript origin. Put the client ID in `index.html` (`<meta name="google-client-id">`).
-3. **Env vars** (Netlify UI, or `.env` for `netlify dev`) — see `.env.example`:
-   `NOTION_TOKEN`, `NOTION_SOAP_DB_ID`, `NOTION_CURE_DB_ID`, `GOOGLE_CLIENT_ID`, `OWNER_EMAIL`.
-4. **Deploy** — connect the repo to a Netlify site, set the env vars, point
-   `soap.usfkhoury.com` at it. Then click **Sign in** in the batch-log card to enable writes.
-
-## Local dev
-
-```
-npm install
-npx netlify dev      # serves the static site + the function at /api/soap
-```
-
-The calculator/PWA work with plain static hosting too (`python3 -m http.server`); only the
-Notion sync needs the function.
+Push to `main`. Netlify builds and publishes automatically.
