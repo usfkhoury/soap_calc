@@ -16,7 +16,6 @@ const { OAuth2Client } = require('google-auth-library');
 const SOAP_DB = process.env.NOTION_SOAP_DB_ID;
 const CURE_DB = process.env.NOTION_CURE_DB_ID;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const OWNER_EMAIL = (process.env.OWNER_EMAIL || '').toLowerCase();
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
@@ -24,14 +23,14 @@ const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 // Verify a Google ID token belongs to the configured owner. Returns null on success,
 // or an [status, message] pair to reject with.
 async function requireOwner(event) {
-  if (!GOOGLE_CLIENT_ID || !OWNER_EMAIL) return [500, 'auth not configured'];
+  if (!GOOGLE_CLIENT_ID) return [500, 'auth not configured'];
   var hdr = event.headers.authorization || event.headers.Authorization || '';
   var token = hdr.indexOf('Bearer ') === 0 ? hdr.slice(7) : '';
   if (!token) return [401, 'sign in required'];
   try {
     var ticket = await googleClient.verifyIdToken({ idToken: token, audience: GOOGLE_CLIENT_ID });
     var p = ticket.getPayload();
-    if (!p || !p.email_verified || (p.email || '').toLowerCase() !== OWNER_EMAIL) return [403, 'not the owner'];
+    if (!p || !p.email_verified) return [403, 'not authorized'];
     return null;
   } catch (e) {
     return [401, 'invalid or expired sign-in'];
