@@ -1,6 +1,6 @@
 # Static publish (no build step) + the one serverless function.
 [build]
-  publish = "."
+  publish = "frontend"
   functions = "netlify/functions"
 
 [functions]
